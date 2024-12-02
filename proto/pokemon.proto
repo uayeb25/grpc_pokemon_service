@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package pokemon;
+
+option go_package = "pokemon-grpc/proto;proto";
+
+
+service PokemonService {
+    rpc GetPokemonInfo( PokemonRequest ) returns ( PokemonResponse );
+}
+
+message PokemonRequest {
+    string name = 1;
+}
+
+message PokemonResponse {
+    string name = 1;
+    string type = 2;
+    int32 level = 3;
+}

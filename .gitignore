@@ -1,0 +1,6 @@
+## Ignoer files in grpc project
+
+*.pb.go
+*.pb.gw.go
+*.swagger.json
+.env
