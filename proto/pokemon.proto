@@ -4,9 +4,11 @@ package pokemon;
 
 option go_package = "pokemon-grpc/proto;proto";
 
-
 service PokemonService {
     rpc GetPokemonInfo( PokemonRequest ) returns ( PokemonResponse );
+    rpc GetPokemonList( Empty ) returns ( stream PokemonResponse );
+    rpc AddPokemons( stream NewPokemonRequest ) returns ( AddPokemonResponse );
+    rpc GetPokemonsByType( stream PokemonTypeRequest ) returns ( stream PokemonResponse );
 }
 
 message PokemonRequest {
@@ -17,4 +19,20 @@ message PokemonResponse {
     string name = 1;
     string type = 2;
     int32 level = 3;
+}
+
+message NewPokemonRequest {
+    string name = 1;
+    string type = 2;
+    int32 level = 3;
+}
+
+message AddPokemonResponse {
+    int32 count = 1;
+}
+
+message Empty {}
+
+message PokemonTypeRequest {
+    string type = 1;
 }

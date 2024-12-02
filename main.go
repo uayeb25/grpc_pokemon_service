@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -47,6 +48,116 @@ func (s *server) GetPokemonInfo(ctx context.Context, req *pb.PokemonRequest) (*p
 		Level: int32(level),
 	}, nil
 
+}
+
+func (s *server) GetPokemonList(req *pb.Empty, stream pb.PokemonService_GetPokemonListServer) error {
+	query := "select * from pokeprd.Pokemon"
+	rows, err := db.Query(query)
+
+	if err != nil {
+		log.Panic(err)
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name, ptype string
+		var level int
+
+		if err := rows.Scan(&name, &ptype, &level); err != nil {
+			log.Panic(err)
+			return err
+		}
+
+		if err := stream.Send(&pb.PokemonResponse{
+			Name:  name,
+			Type:  ptype,
+			Level: int32(level),
+		}); err != nil {
+			log.Panic(err)
+			return err
+		}
+	}
+
+	return nil
+
+}
+
+func (s *server) AddPokemons(stream pb.PokemonService_AddPokemonsServer) error {
+	var count int32
+
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return stream.SendAndClose(&pb.AddPokemonResponse{
+				Count: count,
+			})
+		}
+
+		if err != nil {
+			log.Panic(err)
+			return err
+		}
+
+		query := "insert into pokeprd.Pokemon (Name, Type, Level) values (@Name, @Type, @Level)"
+		_, err = db.Exec(query,
+			sql.Named("Name", req.Name),
+			sql.Named("Type", req.Type),
+			sql.Named("Level", req.Level))
+
+		if err != nil {
+			log.Panic(err)
+			return err
+		}
+
+		count++
+		log.Printf("Added %s", req.Name)
+
+	}
+
+}
+
+func (s *server) GetPokemonsByType(stream pb.PokemonService_GetPokemonsByTypeServer) error {
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			log.Println("End of stream")
+			return nil
+		}
+
+		if err != nil {
+			log.Panic(err)
+			return err
+		}
+
+		query := "select * from pokeprd.Pokemon where lower(Type) = lower(@Type) "
+		rows, err := db.Query(query, sql.Named("Type", req.Type))
+		if err != nil {
+			log.Panic(err)
+			return err
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var name, ptype string
+			var level int
+
+			if err := rows.Scan(&name, &ptype, &level); err != nil {
+				log.Panic(err)
+				return err
+			}
+
+			if err := stream.Send(&pb.PokemonResponse{
+				Name:  name,
+				Type:  ptype,
+				Level: int32(level),
+			}); err != nil {
+				log.Panic(err)
+				return err
+			}
+		}
+
+	}
 }
 
 func main() {
