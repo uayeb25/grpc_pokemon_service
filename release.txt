@@ -1,0 +1,16 @@
+----docker build -t grpc-pokemon-server:latest .
+
+
+docker buildx build --platform linux/amd64 -t grpc-pokemon-server:latest . --load
+
+
+docker run -d -p 50051:50051 -p 8080:8080 --name grpc-pokemon-server grpc-pokemon-server:latest
+
+az login
+az acr login --name lenguajescr
+
+docker tag grpc-pokemon-server:latest lenguajescr.azurecr.io/grpc-pokemon-server:latest
+docker tag grpc-pokemon-server:latest lenguajescr.azurecr.io/grpc-pokemon-server:0.0.1
+
+docker push lenguajescr.azurecr.io/grpc-pokemon-server:latest
+docker push lenguajescr.azurecr.io/grpc-pokemon-server:0.0.1

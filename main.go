@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
 
 	pb "pokemon-grpc/proto"
@@ -195,6 +196,16 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterPokemonServiceServer(grpcServer, &server{})
+
+	// Iniciar servidor HTTP para health check
+	go func() {
+		http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		})
+		log.Println("Starting health check server on port 8080")
+		log.Fatal(http.ListenAndServe(":8080", nil))
+	}()
 
 	log.Println("Starting server on port :50051")
 	if err := grpcServer.Serve(listener); err != nil {
